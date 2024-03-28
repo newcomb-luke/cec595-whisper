@@ -86,7 +86,7 @@ class Exchange:
                 else:
                     final_words.append(word)
 
-            text = ' '.join(final_words)
+            text = ' '.join(final_words).capitalize()
         else:
             print(raw)
             print(f'Invalid format (expected TEXT): {parts[3]}')
