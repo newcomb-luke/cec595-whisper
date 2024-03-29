@@ -1,5 +1,6 @@
 import sys
 import os
+import time
 from pydub import AudioSegment
 
 
@@ -59,11 +60,13 @@ def parse_vtt(path: str) -> list[Caption]:
 
 
 def main():
-    if len(sys.argv) > 1:
+    if len(sys.argv) > 2:
         base_path = sys.argv[1]
 
         audio_path = os.path.join(base_path, 'audio')
         transcripts_path = os.path.join(base_path, 'transcripts')
+
+        output_path = sys.argv[2]
 
         audio_files = []
         transcript_files = []
@@ -91,10 +94,24 @@ def main():
 
             for transcript_file in transcript_files:
                 if name in transcript_file:
-                    matches[name] = { "audio": file, "transcript": transcript_file }
+                    matches[name] = { "audio": file, "transcript": parse_vtt(transcript_file) }
+
+        total_captions = sum([len(data['transcript']) for _, data in matches.items()])
+        total_current = 1
+
+        total_unintelligible = 0
+
+        for _, data in matches.items():
+            for caption in data['transcript']:
+                if '(unintelligible)' in caption.text:
+                    total_unintelligible += 1
+        
+        print(f'Total unintelligible: {total_unintelligible}')
+
+        print('')
 
         for tape, data in matches.items():
-            captions = parse_vtt(data['transcript'])
+            captions = data['transcript']
 
             sound = AudioSegment.from_wav(data['audio'])
 
@@ -107,16 +124,22 @@ def main():
 
                 section = sound[start_millis:end_millis]
 
-                os.makedirs(f'/home/luke/split-test/{tape}', exist_ok=True)
+                tape_dir = f'{output_path}/{tape}'
 
-                section.export(f'/home/luke/split-test/{tape}/part-{current}.mp3', format='mp3')
+                os.makedirs(tape_dir, exist_ok=True)
 
-                print(f'{current} / {num_captions}', flush=True)
+                section.export(f'{tape_dir}/part-{current}.mp3', format='mp3')
+
+                print(f'Batch: {current} / {num_captions} -- Total: {total_current} / {total_captions}                              ', end='\r')
 
                 current += 1
+                total_current += 1
+
+        print('\nDone')
 
     else:
-        print('This script requires the path to the atc0_*/data/ directory')
+        print('Script usage:')
+        print('split-audio.py <path to atc0_*/data/ directory> <output directory>')
 
 if __name__ == '__main__':
     main()
