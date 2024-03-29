@@ -60,7 +60,7 @@ def parse_vtt(path: str) -> list[Caption]:
 
 
 def main():
-    if len(sys.argv) > 2:
+    if len(sys.argv) == 3:
         base_path = sys.argv[1]
 
         audio_path = os.path.join(base_path, 'audio')
